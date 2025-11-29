@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+  <h3>⚠️ Internal Server Error</h3>
+  <p>The app hit an error and could not finish the request.</p>
+  {% if msg %}<pre style="white-space:pre-wrap">{{ msg }}</pre>{% endif %}
+  <p>Check the terminal for a detailed traceback. Try again after fixing the issue below:</p>
+  <ul>
+    <li>Is <code>GROQ_API_KEY</code> set in this terminal?</li>
+    <li>Are you uploading text-based (not scanned) PDFs?</li>
+    <li>Is the database file <code>app.db</code> writable?</li>
+  </ul>
+  <a class="btn" href="/">Go Home</a>
+</div>
+{% endblock %}

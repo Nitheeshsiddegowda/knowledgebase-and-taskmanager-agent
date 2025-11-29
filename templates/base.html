@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>KB + Tasks</title>
+
+  <!-- Bootstrap 5 + Icons (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --card-radius: 16px;
+    }
+    body { font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto, Arial; }
+    .app-card { border-radius: var(--card-radius); box-shadow: 0 8px 22px rgba(0,0,0,.06); }
+    .section-title { font-weight: 700; letter-spacing:.2px; }
+    .brand { font-weight: 700; }
+    .chip { border-radius: 999px; padding: .25rem .6rem; background: #f1f3f5; font-size:.85rem; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .fade-enter { opacity: 0; transform: translateY(6px); }
+  </style>
+</head>
+<body class="bg-body">
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+  <div class="container">
+    <a class="navbar-brand brand" href="/"><i class="bi bi-journal-text me-1"></i> KB + Tasks</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
+            aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div id="nav" class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="/">Index</a></li>
+        <li class="nav-item"><a class="nav-link" href="/ask">Ask</a></li>
+        <li class="nav-item"><a class="nav-link" href="/tasks">Tasks</a></li>
+        <li class="nav-item"><a class="nav-link" href="/kb">KB</a></li>
+      </ul>
+      <div class="d-flex gap-2">
+        <button id="toggleTheme" class="btn btn-outline-secondary btn-sm" type="button">
+          <i class="bi bi-moon-stars"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container my-4">
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="position-fixed top-0 end-0 p-3" style="z-index: 1080">
+        {% for m in messages %}
+        <div class="toast align-items-center text-bg-info border-0 show mb-2">
+          <div class="d-flex">
+            <div class="toast-body">{{ m }}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+<footer class="border-top py-4">
+  <div class="container small text-secondary">
+    <span class="me-2">© {{ 2025 }}</span>
+    <span class="chip">Flask</span>
+    <span class="chip">Groq</span>
+    <span class="chip">SQLite</span>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Theme toggle
+  const btn = document.getElementById('toggleTheme');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const html = document.documentElement;
+      const cur = html.getAttribute('data-bs-theme') || 'light';
+      const next = (cur === 'light') ? 'dark' : 'light';
+      html.setAttribute('data-bs-theme', next);
+    });
+  }
+
+  // Disable submit buttons on submit + show spinner
+  document.addEventListener('submit', (e) => {
+    const btn = e.target.querySelector('button[type="submit"]');
+    if (btn) {
+      btn.disabled = true;
+      const original = btn.innerHTML;
+      btn.dataset.original = original;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Working...';
+      setTimeout(()=>{ btn.disabled=false; btn.innerHTML=original; }, 10000);
+    }
+  });
+</script>
+</body>
+</html>

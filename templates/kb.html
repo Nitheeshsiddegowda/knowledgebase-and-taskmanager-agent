@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card app-card">
+  <div class="card-body">
+    <h3 class="section-title mb-3"><i class="bi bi-database me-2"></i>KB Preview</h3>
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead class="table-light"><tr><th>Source</th><th>Page</th><th>Chars</th><th>Preview</th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td class="code">{{ r.source }}</td>
+            <td><span class="badge text-bg-secondary">p{{ r.page }}</span></td>
+            <td class="text-secondary small">{{ r.n }}</td>
+            <td class="small">{{ r.preview }}</td>
+          </tr>
+          {% endfor %}
+          {% if rows|length == 0 %}
+          <tr><td colspan="4" class="text-center text-secondary">No chunks indexed yet.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+    <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card app-card">
+  <div class="card-body">
+    <h3 class="section-title mb-3"><i class="bi bi-chat-dots me-2"></i>Ask</h3>
+    <form id="askForm" method="post" class="row gy-3">
+      <div class="col-12">
+        <textarea id="queryBox" class="form-control" name="query" rows="3"
+          placeholder="Ask about your documents… (e.g., Summarize in 3 bullets with citations)" required></textarea>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Top-K chunks</label>
+        <select class="form-select" name="topk" id="topkSel">
+          <option>2</option><option selected>4</option><option>6</option><option>8</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Model</label>
+        <select class="form-select" name="model" id="modelSel">
+          <option selected>llama-3.1-8b-instant</option>
+          <option>llama-3.3-70b-versatile</option>
+        </select>
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <button id="askBtn" type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-magic me-1"></i>Answer
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if answer is not none %}
+<div class="card app-card mt-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0">Answer</h5>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary" id="copyAns"><i class="bi bi-clipboard"></i> Copy</button>
+      </div>
+    </div>
+    <div id="ansText" class="lh-base">{{ answer|safe }}</div>
+  </div>
+</div>
+{% endif %}
+
+{% if sources %}
+<div class="card app-card mt-3">
+  <div class="card-body">
+    <h6 class="mb-2">Sources</h6>
+    <ul class="list-unstyled mb-0">
+      {% for s in sources %}
+      <li class="mb-1">
+        <span class="badge text-bg-secondary me-2">p{{ s.page }}</span>
+        <span class="code">{{ s.source }}</span>
+        {% if s.score is not none %}<span class="text-secondary ms-2">score {{ '%.4f'|format(s.score) }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+<!-- Mini Chat History -->
+<div class="card app-card mt-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Questions</h5>
+      <button id="clearHist" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash3"></i> Clear</button>
+    </div>
+    <ul id="histList" class="list-group list-group-flush"></ul>
+  </div>
+</div>
+
+<script>
+  // ---- Mini Chat History (last 5) ----
+  const KEY = 'kb_mini_history_v1';  // localStorage key
+
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(KEY) || '[]'); }
+    catch { return []; }
+  }
+
+  function saveHistory(arr) {
+    localStorage.setItem(KEY, JSON.stringify(arr.slice(0, 5)));
+  }
+
+  function addToHistory(q, topk, model) {
+    if (!q || !q.trim()) return;
+    const entry = { q: q.trim(), topk, model, ts: Date.now() };
+    let hist = loadHistory();
+    // de-dup by text
+    hist = [entry, ...hist.filter(x => x.q !== entry.q)];
+    saveHistory(hist);
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const ul = document.getElementById('histList');
+    if (!ul) return;
+    const hist = loadHistory();
+    ul.innerHTML = '';
+    if (hist.length === 0) {
+      ul.innerHTML = `<li class="list-group-item text-secondary">No recent questions.</li>`;
+      return;
+    }
+    hist.forEach((h, idx) => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-start';
+      li.innerHTML = `
+        <div class="me-3" style="max-width:80%;">
+          <div class="fw-semibold text-truncate" title="${h.q.replace(/"/g,'&quot;')}">${h.q}</div>
+          <div class="small text-secondary">TopK: ${h.topk} • Model: ${h.model}</div>
+        </div>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-primary" data-idx="${idx}"><i class="bi bi-arrow-repeat"></i></button>
+          <button class="btn btn-outline-secondary" data-copy="${idx}"><i class="bi bi-clipboard"></i></button>
+        </div>
+      `;
+      ul.appendChild(li);
+    });
+
+    // click handlers
+    ul.querySelectorAll('button[data-idx]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-idx'));
+        const h = loadHistory()[idx];
+        if (!h) return;
+        // fill form and submit
+        const qBox = document.getElementById('queryBox');
+        const topkSel = document.getElementById('topkSel');
+        const modelSel = document.getElementById('modelSel');
+        qBox.value = h.q;
+        topkSel.value = String(h.topk || '4');
+        modelSel.value = h.model || 'llama-3.1-8b-instant';
+        document.getElementById('askForm').submit();
+      });
+    });
+
+    ul.querySelectorAll('button[data-copy]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-copy'));
+        const h = loadHistory()[idx];
+        if (!h) return;
+        navigator.clipboard.writeText(h.q);
+        btn.innerHTML = '<i class="bi bi-clipboard-check"></i>';
+        setTimeout(()=> btn.innerHTML = '<i class="bi bi-clipboard"></i>', 1200);
+      });
+    });
+  }
+
+  // Save on submit
+  const form = document.getElementById('askForm');
+  if (form) {
+    form.addEventListener('submit', () => {
+      const q = document.getElementById('queryBox').value;
+      const topk = document.getElementById('topkSel').value;
+      const model = document.getElementById('modelSel').value;
+      addToHistory(q, topk, model);
+    });
+  }
+
+  // Copy answer
+  const copyBtn = document.getElementById('copyAns');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const t = document.getElementById('ansText')?.innerText || '';
+      navigator.clipboard.writeText(t).then(() => {
+        copyBtn.innerHTML = '<i class="bi bi-clipboard-check"></i> Copied';
+        setTimeout(()=> copyBtn.innerHTML = '<i class="bi bi-clipboard"></i> Copy', 1500);
+      });
+    });
+  }
+
+  // Clear history
+  const clearBtn = document.getElementById('clearHist');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      localStorage.removeItem(KEY);
+      renderHistory();
+    });
+  }
+
+  // initial render
+  renderHistory();
+</script>
+{% endblock %}

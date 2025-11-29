@@ -1,0 +1,26 @@
+vector_store/
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.venv/
+env/
+venv/
+
+# Local DB
+app.db
+
+# OS garbage
+.DS_Store
+Thumbs.db
+
+# API Keys or secrets
+.env
+
+# Temporary files
+*.log
+.cache/
+
+# PDFs (optional)
+*.pdf
